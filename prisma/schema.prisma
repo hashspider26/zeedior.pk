@@ -151,6 +151,7 @@ model VerificationToken {
 model Category {
   id            String        @id @default(cuid())
   name          String        @unique
+  image         String?
   subcategories SubCategory[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

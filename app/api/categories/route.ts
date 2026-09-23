@@ -13,6 +13,12 @@ export async function GET() {
             try {
                 const { createClient } = await import("@libsql/client");
                 const client = createClient({ url, authToken });
+
+                // Ensure image column exists
+                try {
+                    await client.execute('ALTER TABLE "Category" ADD COLUMN "image" TEXT');
+                } catch (e) {}
+
                 const catRes = await client.execute('SELECT * FROM "Category" ORDER BY name ASC');
                 const subRes = await client.execute('SELECT * FROM "SubCategory" ORDER BY name ASC');
 
@@ -30,6 +36,7 @@ export async function GET() {
                 const result = catRes.rows.map((c: any) => ({
                     id: String(c.id),
                     name: String(c.name),
+                    image: c.image ? String(c.image) : null,
                     subcategories: subMap[String(c.id)] || []
                 }));
 
@@ -57,14 +64,36 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { name } = body;
+        const { name, image } = body;
 
         if (!name) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
         }
 
-        const category = await prisma.category.create({
-            data: { name },
+        const url = process.env.TURSO_DATABASE_URL;
+        const authToken = process.env.TURSO_AUTH_TOKEN;
+        if (url && authToken) {
+            try {
+                const { createClient } = await import("@libsql/client");
+                const client = createClient({ url, authToken });
+                try {
+                    await client.execute('ALTER TABLE "Category" ADD COLUMN "image" TEXT');
+                } catch (e) {}
+
+                const id = "cat_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+                await client.execute({
+                    sql: 'INSERT INTO "Category" (id, name, image, updatedAt) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                    args: [id, name.trim(), image || null]
+                });
+
+                return NextResponse.json({ id, name: name.trim(), image: image || null });
+            } catch (tursoErr) {
+                console.warn("Direct Turso Category insert failed, fallback to Prisma:", tursoErr);
+            }
+        }
+
+        const category = await (prisma.category as any).create({
+            data: { name: name.trim(), image: image || null },
         });
 
         return NextResponse.json(category);

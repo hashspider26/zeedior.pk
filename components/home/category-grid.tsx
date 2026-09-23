@@ -36,18 +36,21 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
 ];
 
 interface CategoryGridProps {
-  categories?: { name: string }[];
+  categories?: { name: string; image?: string | null }[];
 }
 
 export function CategoryGrid({ categories }: CategoryGridProps) {
   const displayCategories: CategoryItem[] =
     categories && categories.length > 0
-      ? categories.map((cat, idx) => ({
-          id: cat.name.toLowerCase().replace(/\s+/g, "-"),
-          name: cat.name,
-          image: DEFAULT_CATEGORIES[idx % DEFAULT_CATEGORIES.length].image,
-          itemCount: Math.floor(Math.random() * 20) + 10,
-        }))
+      ? categories.map((cat, idx) => {
+          const customImg = cat.image && String(cat.image).trim().length > 0 ? String(cat.image).trim() : null;
+          return {
+            id: cat.name.toLowerCase().replace(/\s+/g, "-"),
+            name: cat.name,
+            image: customImg || DEFAULT_CATEGORIES[idx % DEFAULT_CATEGORIES.length].image,
+            itemCount: Math.floor(Math.random() * 20) + 10,
+          };
+        })
       : DEFAULT_CATEGORIES;
 
   return (

@@ -51,6 +51,34 @@ async function getBanners() {
   }
 }
 
+async function getCategories() {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (url && authToken) {
+    try {
+      const { createClient } = await import("@libsql/client");
+      const client = createClient({ url, authToken });
+      try {
+        await client.execute('ALTER TABLE "Category" ADD COLUMN "image" TEXT');
+      } catch (e) {}
+      const res = await client.execute('SELECT * FROM "Category" ORDER BY name ASC');
+      return res.rows.map((row: any) => ({
+        id: String(row.id),
+        name: String(row.name),
+        image: row.image ? String(row.image) : null,
+      }));
+    } catch (e) {
+      console.error("Failed to fetch categories via libsql client in home:", e);
+    }
+  }
+
+  try {
+    return await (prisma.category as any).findMany();
+  } catch (e) {
+    return [];
+  }
+}
+
 const DEFAULT_BANNER_1 = {
   key: "hero-banner-1",
   mediaType: "IMAGE",
@@ -83,9 +111,7 @@ export default async function Home() {
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
-    prisma.category.findMany({
-      take: 4,
-    }),
+    getCategories(),
     getBanners(),
   ]);
 
