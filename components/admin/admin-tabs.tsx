@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BarChart3, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, BarChart3, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminTabs({ sessionName }: { sessionName: string }) {
@@ -16,6 +16,12 @@ export function AdminTabs({ sessionName }: { sessionName: string }) {
             active: pathname === "/admin/dashboard"
         },
         {
+            name: "Banners",
+            href: "/admin/dashboard/banners",
+            icon: ImageIcon,
+            active: pathname === "/admin/dashboard/banners"
+        },
+        {
             name: "Analytics",
             href: "/admin/dashboard/analytics",
             icon: BarChart3,
@@ -25,27 +31,27 @@ export function AdminTabs({ sessionName }: { sessionName: string }) {
 
     return (
         <div className="bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-30">
-            <div className="mx-auto max-w-5xl px-6">
-                <div className="flex items-center justify-between h-16 md:h-20">
-                    <div className="flex items-center gap-8 h-full">
-                        <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-primary transition-colors pr-4 border-r border-zinc-100 dark:border-zinc-800">
+            <div className="mx-auto max-w-5xl px-3 sm:px-6">
+                <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
+                    <div className="flex items-center gap-2 sm:gap-6 h-full overflow-hidden flex-1 min-w-0">
+                        <Link href="/" className="flex items-center gap-1.5 text-zinc-400 hover:text-primary transition-colors pr-3 sm:pr-4 border-r border-zinc-100 dark:border-zinc-800 shrink-0">
                             <ArrowLeft className="h-4 w-4" />
                             <span className="text-xs font-bold uppercase tracking-wider hidden md:inline">Exit</span>
                         </Link>
 
-                        <nav className="flex items-center gap-1 h-full">
+                        <nav className="flex items-center gap-1 h-full overflow-x-auto hide-scrollbar whitespace-nowrap">
                             {tabs.map((tab) => (
                                 <Link
                                     key={tab.href}
                                     href={tab.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 h-full border-b-2 transition-all font-bold text-sm",
+                                        "flex items-center gap-2 px-3 sm:px-4 h-full border-b-2 transition-all font-bold text-xs sm:text-sm shrink-0 whitespace-nowrap",
                                         tab.active
                                             ? "border-primary text-primary"
                                             : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
                                     )}
                                 >
-                                    <tab.icon className="h-4 w-4" />
+                                    <tab.icon className="h-4 w-4 shrink-0" />
                                     <span>{tab.name}</span>
                                 </Link>
                             ))}

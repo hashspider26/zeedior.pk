@@ -7,8 +7,41 @@ import { authOptions } from "@/lib/auth";
 
 export async function GET() {
     try {
-        const categories = await prisma.category.findMany({
-            orderBy: { createdAt: 'desc' }
+        const url = process.env.TURSO_DATABASE_URL;
+        const authToken = process.env.TURSO_AUTH_TOKEN;
+        if (url && authToken) {
+            try {
+                const { createClient } = await import("@libsql/client");
+                const client = createClient({ url, authToken });
+                const catRes = await client.execute('SELECT * FROM "Category" ORDER BY name ASC');
+                const subRes = await client.execute('SELECT * FROM "SubCategory" ORDER BY name ASC');
+
+                const subMap: Record<string, any[]> = {};
+                subRes.rows.forEach((sub: any) => {
+                    const cId = String(sub.categoryId);
+                    if (!subMap[cId]) subMap[cId] = [];
+                    subMap[cId].push({
+                        id: String(sub.id),
+                        name: String(sub.name),
+                        categoryId: String(sub.categoryId)
+                    });
+                });
+
+                const result = catRes.rows.map((c: any) => ({
+                    id: String(c.id),
+                    name: String(c.name),
+                    subcategories: subMap[String(c.id)] || []
+                }));
+
+                return NextResponse.json(result);
+            } catch (e) {
+                console.warn("Turso direct category GET failed, falling to Prisma:", e);
+            }
+        }
+
+        const categories = await (prisma.category as any).findMany({
+            include: { subcategories: true },
+            orderBy: { name: 'asc' }
         });
         return NextResponse.json(categories);
     } catch (error) {

@@ -31,16 +31,16 @@
 
 4. **Create a database**:
    ```bash
-   turso db create greenvalleyseeds
+   turso db create zeedior
    ```
 
 5. **Get database URL and auth token**:
    ```bash
    # Get database URL
-   turso db show greenvalleyseeds --url
+   turso db show zeedior --url
    
    # Create auth token
-   turso db tokens create greenvalleyseeds
+   turso db tokens create zeedior
    ```
 
 6. **Run migrations**:

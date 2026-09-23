@@ -4,8 +4,8 @@ import Link from "next/link";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-    title: "Privacy Policy | Green Valley Seeds",
-    description: "Privacy Policy for Green Valley Seeds - Learn how we protect and handle your personal information.",
+    title: "Privacy Policy | Zeedior.pk",
+    description: "Privacy Policy for Zeedior.pk - Learn how we protect and handle your personal information.",
 };
 
 export default function PrivacyPage() {
@@ -229,7 +229,7 @@ export default function PrivacyPage() {
                                 <div className="flex items-start gap-3">
                                     <Shield className="h-5 w-5 text-primary mt-0.5" />
                                     <div>
-                                        <p className="font-medium">Green Valley Seeds</p>
+                                        <p className="font-medium">Zeedior.pk</p>
                                         <p>Mianwali, Punjab, Pakistan</p>
                                     </div>
                                 </div>

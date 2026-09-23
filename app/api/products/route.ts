@@ -34,7 +34,9 @@ export async function POST(request: Request) {
                 price: Number(body.price),
                 salePrice: body.salePrice ? Number(body.salePrice) : null,
                 category: body.category,
+                subCategory: body.subCategory || null,
                 stock: Number(body.stock),
+                isCustomizable: body.isCustomizable === true || body.isCustomizable === "true" || body.isCustomizable === 1 || body.isCustomizable === "1",
                 images: JSON.stringify(body.images || []),
                 isFeatured: body.isFeatured || false,
                 deliveryFee: body.deliveryFee ? Number(body.deliveryFee) : 0,
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
                         }))
                     }
                 })
-            },
+            } as any,
             include: { variations: true }
         });
         return NextResponse.json(product);

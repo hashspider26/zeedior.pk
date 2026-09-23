@@ -7,14 +7,14 @@ export async function GET(request: NextRequest) {
     const viewRaw = searchParams.get("view") === "raw";
     const products = await prisma.product.findMany();
 
-    const baseUrl = "https://greenvalleyseeds.pk";
+    const baseUrl = "https://zeedior.pk";
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
   <channel>
-    <title>Green Valley Seeds Product Catalog</title>
+    <title>Zeedior Product Catalog</title>
     <link>${baseUrl}</link>
-    <description>Green Valley Seeds Products Feed for Catalog Ads</description>
+    <description>Zeedior Products Feed for Catalog Ads</description>
 `;
 
     for (const product of products) {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       <g:description>${description}</g:description>
       <g:link>${link}</g:link>
       <g:image_link>${image_link}</g:image_link>
-      <g:brand>Green Valley Seeds</g:brand>
+      <g:brand>Zeedior</g:brand>
       <g:condition>new</g:condition>
       <g:availability>${availability}</g:availability>
       <g:price>${price}</g:price>

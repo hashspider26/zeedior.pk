@@ -47,7 +47,7 @@ export default async function UserOrdersPage() {
                             Back to Profile
                         </Link>
                         <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">My Orders</h1>
-                        <p className="text-zinc-500 mt-1">Track and view all your seed orders</p>
+                        <p className="text-zinc-500 mt-1">Track and view all your orders</p>
                     </div>
                     <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-xs font-bold text-primary uppercase tracking-widest border border-primary/20">
                         <ShoppingBag className="h-4 w-4" /> {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}

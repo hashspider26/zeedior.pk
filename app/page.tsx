@@ -1,141 +1,240 @@
 import Link from "next/link";
-import { ArrowRight, Truck, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, Sparkles, Zap, Award } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/product/product-card";
+import { MegaCover } from "@/components/home/mega-cover";
+import { CategoryGrid } from "@/components/home/category-grid";
 
-export const revalidate = 3600; // Cache for 1 hour
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+async function getBanners() {
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (url && authToken) {
+    try {
+      const { createClient } = await import("@libsql/client");
+      const client = createClient({ url, authToken });
+      const res = await client.execute('SELECT * FROM "Banner"');
+      return res.rows.map((row: any) => ({
+        id: String(row.id),
+        key: String(row.key),
+        mediaType: String(row.mediaType || "IMAGE"),
+        mediaUrl: String(row.mediaUrl || ""),
+        showContent: row.showContent === 1 || row.showContent === true || row.showContent === "1",
+        badge: row.badge ? String(row.badge) : "",
+        title: row.title ? String(row.title) : "",
+        subtitle: row.subtitle ? String(row.subtitle) : "",
+        buttonText: row.buttonText ? String(row.buttonText) : "",
+        buttonUrl: row.buttonUrl ? String(row.buttonUrl) : "/shop",
+        align: row.align ? String(row.align) : "center",
+      }));
+    } catch (e) {
+      console.error("Failed to fetch banners via libsql client in home:", e);
+    }
+  }
+
+  if ((prisma as any).banner) {
+    try {
+      return await (prisma as any).banner.findMany();
+    } catch (e) {}
+  }
+
+  try {
+    const rows: any[] = await prisma.$queryRawUnsafe('SELECT * FROM "Banner"');
+    return rows.map((row: any) => ({
+      ...row,
+      showContent: row.showContent === 1 || row.showContent === true,
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+const DEFAULT_BANNER_1 = {
+  key: "hero-banner-1",
+  mediaType: "IMAGE",
+  mediaUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1920",
+  showContent: true,
+  badge: "ZEEDIOR EXCLUSIVE 2026",
+  title: "LUXURY & CUSTOM CRAFTSMANSHIP",
+  subtitle: "Discover personalized rings, engraved wallets, custom printed cups, and unique accessories crafted to perfection.",
+  buttonText: "EXPLORE COLLECTION",
+  buttonUrl: "/shop",
+  align: "center",
+};
+
+const DEFAULT_BANNER_2 = {
+  key: "mid-banner-2",
+  mediaType: "IMAGE",
+  mediaUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1920",
+  showContent: true,
+  badge: "SEASONAL SPOTLIGHT",
+  title: "PERSONALIZED GIFTS & UNIQUE GADGETS",
+  subtitle: "Unmatched quality personalized products designed to leave a lasting impression for your loved ones.",
+  buttonText: "SHOP FEATURED",
+  buttonUrl: "/shop",
+  align: "left",
+};
 
 export default async function Home() {
-  const latestProducts = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-  });
+  const [trendingProducts, dbCategories, dbBanners] = await Promise.all([
+    prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    prisma.category.findMany({
+      take: 4,
+    }),
+    getBanners(),
+  ]);
+
+  const bannerMap: Record<string, any> = {};
+  if (Array.isArray(dbBanners)) {
+    dbBanners.forEach((b: any) => {
+      bannerMap[b.key] = b;
+    });
+  }
+
+  const banner1 = bannerMap["hero-banner-1"] || DEFAULT_BANNER_1;
+  const banner2 = bannerMap["mid-banner-2"] || DEFAULT_BANNER_2;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative w-full min-h-screen min-h-[100dvh] flex flex-col items-center justify-center py-20 px-4 md:py-32 overflow-hidden bg-zinc-950">
-        {/* Subtle depth overlays */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-white/[0.03] blur-3xl" />
-          {/* Decorative grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
-        </div>
+    <div className="flex flex-col min-h-screen bg-zinc-950 text-white font-sans">
+      {/* ─── 1. MEGA COVER 1 (HERO COVER - 16:9 ASPECT RATIO) ─── */}
+      <MegaCover
+        badge={banner1.badge}
+        title={banner1.title}
+        subtitle={banner1.subtitle}
+        primaryCtaText={banner1.buttonText}
+        primaryCtaLink={banner1.buttonUrl}
+        mediaType={banner1.mediaType}
+        mediaUrl={banner1.mediaUrl}
+        align={banner1.align || "center"}
+        aspectRatio="aspect-[16/9]"
+        showContent={Boolean(banner1.showContent !== false && banner1.showContent !== 0 && banner1.showContent !== "0" && banner1.showContent !== "false")}
+      />
 
-        <div className="mx-auto max-w-6xl text-center relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-sm font-semibold text-white/80 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Sparkles className="h-4 w-4" />
-            <span>Custom Made. Premium Quality.</span>
+      {/* ─── BRAND VALUES STRIP ─── */}
+      <section className="py-8 bg-black border-y border-zinc-900 px-4">
+        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div className="flex items-center justify-center gap-4 py-2 border-b md:border-b-0 md:border-r border-zinc-800/80">
+            <Truck className="h-6 w-6 text-white" />
+            <div className="text-left">
+              <h4 className="text-xs font-black uppercase tracking-widest text-white">Nationwide Shipping</h4>
+              <p className="text-[11px] text-zinc-400">Cash on Delivery across Pakistan</p>
+            </div>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-7xl mb-6 leading-tight">
-            Your Style,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-white">
-              Your Way
-            </span>
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-zinc-400 mb-8">
-            Discover unique gadgets, custom rings, engraved wallets, printed cups, and one-of-a-kind products.
-            Handcrafted &amp; delivered across Pakistan with Cash on Delivery.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+
+          <div className="flex items-center justify-center gap-4 py-2 border-b md:border-b-0 md:border-r border-zinc-800/80">
+            <Award className="h-6 w-6 text-white" />
+            <div className="text-left">
+              <h4 className="text-xs font-black uppercase tracking-widest text-white">Custom Craftsmanship</h4>
+              <p className="text-[11px] text-zinc-400">Every item personalized with care</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 py-2">
+            <ShieldCheck className="h-6 w-6 text-white" />
+            <div className="text-left">
+              <h4 className="text-xs font-black uppercase tracking-widest text-white">100% Quality Guaranteed</h4>
+              <p className="text-[11px] text-zinc-400">Satisfied or hassle-free replacement</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── 2. MEGA COVER 2 (SPOTLIGHT COVER - 16:9 ASPECT RATIO) ─── */}
+      <MegaCover
+        badge={banner2.badge}
+        title={banner2.title}
+        subtitle={banner2.subtitle}
+        primaryCtaText={banner2.buttonText}
+        primaryCtaLink={banner2.buttonUrl}
+        mediaType={banner2.mediaType}
+        mediaUrl={banner2.mediaUrl}
+        align={banner2.align || "left"}
+        aspectRatio="aspect-[16/9]"
+        showContent={Boolean(banner2.showContent !== false && banner2.showContent !== 0 && banner2.showContent !== "0" && banner2.showContent !== "false")}
+      />
+
+      {/* ─── 3. SHOP BY CATEGORY SECTION ─── */}
+      <CategoryGrid categories={dbCategories} />
+
+      {/* ─── 4. TRENDING SECTION (TRENDING NOW) ─── */}
+      <section className="py-24 px-4 md:px-8 bg-white text-zinc-950 border-t border-zinc-200">
+        <div className="mx-auto max-w-7xl">
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-zinc-200 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 mb-3 rounded-full bg-zinc-950 text-white border border-zinc-800 text-[11px] font-black uppercase tracking-[0.2em]">
+                <Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                <span>HOT IN STORE</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-zinc-950">
+                Trending Now
+              </h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 mt-2">
+                Handpicked Bestsellers &amp; Customer Favorites
+              </p>
+            </div>
+
             <Link
               href="/shop"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold text-zinc-950 shadow-lg shadow-black/40 transition-all hover:bg-zinc-100 hover:scale-105"
+              className="mt-4 md:mt-0 text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-950 hover:text-zinc-600 transition-colors inline-flex items-center gap-2 group"
             >
-              Shop Now <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-            <Link
-              href="/about"
-              className="inline-flex h-12 items-center justify-center rounded-full border-2 border-white/30 bg-transparent px-8 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:border-white/60"
-            >
-              Learn More
+              View Full Catalog <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
-        </div>
-      </section>
 
-      {/* Features Grid */}
-      <section className="py-16 bg-white border-y border-zinc-100">
-        <div className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="p-3 bg-zinc-100 rounded-full text-zinc-900">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <h3 className="font-semibold text-lg">Fully Customizable</h3>
-            <p className="text-zinc-500 text-sm">Personalize with your name, design, or message. Every product is made just for you.</p>
-          </div>
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="p-3 bg-zinc-100 rounded-full text-zinc-900">
-              <Truck className="h-6 w-6" />
-            </div>
-            <h3 className="font-semibold text-lg">Nationwide Delivery</h3>
-            <p className="text-zinc-500 text-sm">Fast shipping to all cities in Pakistan via TCS/Leopards. Cash on Delivery available.</p>
-          </div>
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="p-3 bg-zinc-100 rounded-full text-zinc-900">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <h3 className="font-semibold text-lg">Quality Guarantee</h3>
-            <p className="text-zinc-500 text-sm">Premium craftsmanship on every product. Not satisfied? We&apos;ll make it right.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Latest Products */}
-      <section className="py-20 px-4 bg-zinc-50">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-zinc-900">Latest Products</h2>
-              <p className="text-sm text-zinc-500 mt-1">Freshly added to the store</p>
-            </div>
-            <Link href="/shop" className="text-zinc-900 hover:underline text-sm font-medium">View All →</Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {latestProducts.length > 0 ? (
-              latestProducts.map((p: any, i: number) => (
-                <div key={p.id} className={i === 4 ? 'hidden md:block' : ''}>
-                  <ProductCard product={p} />
+          {/* Trending Products Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {trendingProducts.length > 0 ? (
+              trendingProducts.map((product) => (
+                <div key={product.id} className="transition-transform duration-300 hover:-translate-y-1">
+                  <ProductCard product={product as any} showQuickBuy={false} />
                 </div>
               ))
             ) : (
-              <div className="col-span-5 text-center py-12 text-zinc-500">
-                No products yet. Check back soon!
+              <div className="col-span-full text-center py-16 bg-zinc-50 border border-zinc-200">
+                <p className="text-zinc-500 font-medium">No trending items loaded yet.</p>
+                <Link
+                  href="/shop"
+                  className="mt-4 inline-block px-6 py-2.5 bg-zinc-950 text-white font-bold text-xs uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+                >
+                  Explore Shop
+                </Link>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* CTA Banner */}
-      <section className="py-16 px-4 bg-zinc-950">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-4 py-1.5 text-sm font-semibold text-white/80 mb-6">
-            <Zap className="h-4 w-4" />
-            <span>Cash on Delivery Available</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Ready to Order Something Unique?
+      {/* ─── BOTTOM CTA BANNER ─── */}
+      <section className="py-20 px-4 bg-gradient-to-t from-black to-zinc-950 border-t border-zinc-900 text-center">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <span className="inline-block px-4 py-1 rounded-full bg-white/10 text-xs font-black uppercase tracking-[0.25em] text-zinc-300 border border-white/10">
+            ZEEDIOR PAKISTAN
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
+            Ready to Create Something Custom?
           </h2>
-          <p className="text-lg text-zinc-400 mb-8">
-            Custom rings, engraved wallets, printed cups, gadgets &amp; more — delivered to your door.
+          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
+            Order your personalized rings, engraved wallets, custom printed cups, or unique gadgets today. Nationwide Cash on Delivery available across Pakistan.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
+          <div className="pt-4 flex flex-wrap justify-center gap-4">
+            <Link
               href="/shop"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-white text-zinc-950 font-semibold hover:bg-zinc-100 transition-all shadow-lg hover:scale-105"
+              className="px-8 py-4 bg-white text-zinc-950 font-extrabold text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:tracking-[0.25em]"
             >
-              Browse Products
-            </a>
-            <a
+              Start Shopping Now
+            </Link>
+            <Link
               href="/contact"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-transparent border-2 border-white/30 text-white/80 font-semibold hover:bg-white/10 hover:border-white/60 transition-all"
+              className="px-8 py-4 bg-transparent border border-white/30 text-white font-extrabold text-xs uppercase tracking-[0.2em] hover:bg-white/10 hover:border-white transition-all"
             >
-              Contact Us
-            </a>
+              Contact Support
+            </Link>
           </div>
         </div>
       </section>

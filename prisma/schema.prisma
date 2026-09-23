@@ -46,6 +46,9 @@ model Product {
   advanceDiscountType String   @default("PKR") // "PKR" or "PERCENT"
   
   position            Int      @default(0) // For custom sorting order
+  isCustomizable      Boolean  @default(false)
+  subCategory         String?  // Name of subcategory
+  subCategoryId       String?  // ID of subcategory
   
   orderItems  OrderItem[]
   variations  ProductVariation[]
@@ -79,6 +82,7 @@ model Order {
   phone           String
   address         String
   city            String
+  customizationNote String?
   totalAmount     Int
   discountAmount  Int      @default(0)
   paymentMethod   String   @default("COD") // COD, ADVANCE
@@ -145,10 +149,23 @@ model VerificationToken {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String        @id @default(cuid())
+  name          String        @unique
+  subcategories SubCategory[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model SubCategory {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, categoryId])
+  @@index([categoryId])
 }
 
 model ContactMessage {
@@ -182,5 +199,21 @@ model AnalyticsEvent {
   @@index([type])
   @@index([createdAt])
   @@index([source])
+}
+
+model Banner {
+  id          String   @id @default(cuid())
+  key         String   @unique // "hero-banner-1" or "mid-banner-2"
+  mediaType   String   @default("IMAGE") // "IMAGE" or "VIDEO"
+  mediaUrl    String
+  showContent Boolean  @default(true)
+  badge       String?
+  title       String
+  subtitle    String?
+  buttonText  String   @default("Shop Now")
+  buttonUrl   String   @default("/shop")
+  align       String   @default("center") // "left", "center", "right"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 

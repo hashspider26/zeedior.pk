@@ -1,8 +1,8 @@
 
 import { createClient } from '@libsql/client';
 
-const URL = "libsql://greenvalleyseeds-hashspider.aws-ap-south-1.turso.io";
-const TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3Njc1ODQ5NDYsImlkIjoiZTE1ODBkNzYtMjkzYi00NjhiLTk3MWQtNDBhOTVjODc4MmM4IiwicmlkIjoiNWNjMWY2NGItZjU4My00ZDIyLWExMjItYTVjZjc2MGJlNzQ4In0.vU6JeKE8X1pfkidDMHmT6XFRKGY35AwugB-MRIgWMhiRCAtpTyqE6i5Dis2t8pahFFyrCKGyize-wvXYNgI0BQ";
+const URL = process.env.TURSO_DATABASE_URL || "libsql://zeedior-hashspider.aws-ap-south-1.turso.io";
+const TOKEN = process.env.TURSO_AUTH_TOKEN || "";
 
 const client = createClient({
   url: URL,

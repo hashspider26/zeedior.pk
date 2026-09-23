@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sprout, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -69,9 +69,9 @@ function LoginContent() {
         <div className="flex flex-col items-center text-center">
           <Link href="/" className="flex items-center gap-2 mb-6 transition-transform hover:scale-105">
             <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-              <Sprout className="h-6 w-6" />
+              <Sparkles className="h-6 w-6" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-primary">Green Valley Seeds</span>
+            <span className="font-bold text-xl tracking-tight text-primary">Zeedior.pk</span>
           </Link>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
             Welcome back

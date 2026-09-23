@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-    title: "Facebook Ad Analytics | Green Valley Seeds",
+    title: "Facebook Ad Analytics | Zeedior.pk",
     description: "Data analytics for Facebook ad campaigns",
 };
 
@@ -117,8 +117,8 @@ export default function DataAnalyticsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                <CampaignRow name="Summer Seed Sale 2024" status="ACTIVE" spend="Rs 12,400" clicks="1,204" cpp="Rs 310" roas="4.2x" />
-                                <CampaignRow name="Tomato & Veggie Boost" status="ACTIVE" spend="Rs 8,150" clicks="854" cpp="Rs 452" roas="3.8x" />
+                                <CampaignRow name="Summer Mega Sale 2024" status="ACTIVE" spend="Rs 12,400" clicks="1,204" cpp="Rs 310" roas="4.2x" />
+                                <CampaignRow name="Custom Gifts & Accessories" status="ACTIVE" spend="Rs 8,150" clicks="854" cpp="Rs 452" roas="3.8x" />
                                 <CampaignRow name="Retargeting - Cart Abandoners" status="ACTIVE" spend="Rs 4,680" clicks="420" cpp="Rs 125" roas="6.5x" />
                                 <CampaignRow name="Brand Awareness - Lahore" status="PAUSED" spend="Rs 20,000" clicks="934" cpp="-" roas="1.2x" />
                             </tbody>

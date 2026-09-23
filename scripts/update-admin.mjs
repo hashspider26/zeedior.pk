@@ -36,7 +36,7 @@ async function run() {
   // Also check for old admin email
   const oldAdmin = await client.execute({
     sql: `SELECT id FROM "User" WHERE email = ? AND isAdmin = 1`,
-    args: ["admin@greenvalley.pk"],
+    args: ["admin@zeedior.pk"],
   });
 
   if (existing.rows.length > 0) {

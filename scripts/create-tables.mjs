@@ -1,7 +1,22 @@
 import { createClient } from "@libsql/client";
+import fs from "fs";
 
-const url = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+let url = process.env.TURSO_DATABASE_URL;
+let authToken = process.env.TURSO_AUTH_TOKEN;
+
+if (!url || !authToken) {
+  try {
+    const envContent = fs.readFileSync(".env", "utf-8");
+    for (const line of envContent.split("\n")) {
+      const [key, ...vals] = line.split("=");
+      if (key && vals.length) {
+        const val = vals.join("=").trim().replace(/^["']|["']$/g, '');
+        if (key.trim() === "TURSO_DATABASE_URL") url = val;
+        if (key.trim() === "TURSO_AUTH_TOKEN") authToken = val;
+      }
+    }
+  } catch (e) {}
+}
 
 if (!url || !authToken) {
   console.error("❌ Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in .env");
@@ -182,6 +197,40 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS "AnalyticsEvent_type_idx" ON "AnalyticsEvent"("type")`,
   `CREATE INDEX IF NOT EXISTS "AnalyticsEvent_createdAt_idx" ON "AnalyticsEvent"("createdAt")`,
   `CREATE INDEX IF NOT EXISTS "AnalyticsEvent_source_idx" ON "AnalyticsEvent"("source")`,
+
+  // Banner
+  `CREATE TABLE IF NOT EXISTS "Banner" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "key" TEXT NOT NULL,
+    "mediaType" TEXT NOT NULL DEFAULT 'IMAGE',
+    "mediaUrl" TEXT NOT NULL,
+    "showContent" BOOLEAN NOT NULL DEFAULT true,
+    "badge" TEXT,
+    "title" TEXT NOT NULL,
+    "subtitle" TEXT,
+    "buttonText" TEXT NOT NULL DEFAULT 'Shop Now',
+    "buttonUrl" TEXT NOT NULL DEFAULT '/shop',
+    "align" TEXT NOT NULL DEFAULT 'center',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Banner_key_key" ON "Banner"("key")`,
+  // SubCategory
+  `CREATE TABLE IF NOT EXISTS "SubCategory" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "categoryId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SubCategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "SubCategory_name_categoryId_key" ON "SubCategory"("name", "categoryId")`,
+  `CREATE INDEX IF NOT EXISTS "SubCategory_categoryId_idx" ON "SubCategory"("categoryId")`,
+
+  `ALTER TABLE "Product" ADD COLUMN "subCategory" TEXT`,
+  `ALTER TABLE "Product" ADD COLUMN "subCategoryId" TEXT`,
+  `ALTER TABLE "Product" ADD COLUMN "isCustomizable" BOOLEAN DEFAULT 0`,
+  `ALTER TABLE "Order" ADD COLUMN "customizationNote" TEXT`,
 ];
 
 async function run() {

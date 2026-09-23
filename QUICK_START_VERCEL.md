@@ -25,11 +25,11 @@ curl -sSfL https://get.tur.so/install.sh | bash
 turso auth login
 
 # Create database
-turso db create greenvalleyseeds
+turso db create zeedior
 
 # Get connection details
-turso db show greenvalleyseeds --url
-turso db tokens create greenvalleyseeds
+turso db show zeedior --url
+turso db tokens create zeedior
 ```
 
 ### 3. Deploy to Vercel

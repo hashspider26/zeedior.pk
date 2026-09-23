@@ -31,7 +31,7 @@ export async function trackPurchaseServer(order: any) {
                 event_name: "Purchase",
                 event_time: Math.floor(Date.now() / 1000),
                 event_id: eventId, // MUST MATCH THE BROWSER eventID
-                event_source_url: "https://greenvalleyseeds.pk/checkout",
+                event_source_url: "https://zeedior.pk/checkout",
                 action_source: "website",
                 user_data: {
                     // Hash sensitive data if available

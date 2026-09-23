@@ -23,14 +23,26 @@ export default function NewProductPage() {
         deliveryFee: string;
     }[]>([]);
 
-    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+    const [categories, setCategories] = useState<{ id: string; name: string; subcategories?: { id: string; name: string }[] }[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
 
     useEffect(() => {
         fetch("/api/categories")
             .then(res => res.json())
-            .then(data => setCategories(data))
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setCategories(data);
+                    if (data.length > 0) {
+                        setSelectedCategory(data[0].name);
+                    }
+                }
+            })
             .catch(console.error);
     }, []);
+
+    const activeCategoryObj = categories.find(c => c.name === selectedCategory);
+    const availableSubCategories = activeCategoryObj?.subcategories || [];
 
     async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -218,15 +230,57 @@ export default function NewProductPage() {
                                 <input name="weight" type="number" defaultValue={0} required className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Category</label>
-                                <select name="category" className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900">
+                                <select
+                                    name="category"
+                                    value={selectedCategory}
+                                    onChange={(e) => {
+                                        setSelectedCategory(e.target.value);
+                                        setSelectedSubCategory("");
+                                    }}
+                                    className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
+                                >
                                     {categories.map((c) => (
                                         <option key={c.id} value={c.name}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Subcategory (Optional)</label>
+                                <select
+                                    name="subCategory"
+                                    value={selectedSubCategory}
+                                    onChange={(e) => setSelectedSubCategory(e.target.value)}
+                                    className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
+                                >
+                                    <option value="">-- No Subcategory --</option>
+                                    {availableSubCategories.map((sub) => (
+                                        <option key={sub.id} value={sub.name}>{sub.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Customizable Product Option */}
+                        <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="isCustomizable"
+                                    value="true"
+                                    className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500"
+                                />
+                                <div>
+                                    <span className="text-sm font-bold text-amber-950 dark:text-amber-200 block">
+                                        Customizable Product
+                                    </span>
+                                    <span className="text-xs text-amber-700 dark:text-amber-400 block">
+                                        Ask customer for a customization note (e.g. custom name, engraving, gift note) at checkout.
+                                    </span>
+                                </div>
+                            </label>
                         </div>
 
                         {/* Best Deals / Packages Section */}

@@ -59,9 +59,18 @@ export async function sendDiscordOrderNotification(order: any) {
             ],
             timestamp: new Date().toISOString(),
             footer: {
-                text: "Green Valley Seeds • Order Notification System",
+                text: "Zeedior.pk • Order Notification System",
             }
         };
+
+        const note = order.customizationNote ? String(order.customizationNote).trim() : "";
+        if (note) {
+            embed.fields.push({
+                name: "✏️ Customization Note",
+                value: `\`\`\`${note}\`\`\``,
+                inline: false
+            });
+        }
 
         if (itemsDescription) {
             embed.fields.push({
@@ -77,8 +86,8 @@ export async function sendDiscordOrderNotification(order: any) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                username: "Green Valley Order Bot",
-                avatar_url: "https://greenvalleyseeds.pk/icon.svg",
+                username: "Zeedior Order Bot",
+                avatar_url: "https://zeedior.pk/icon.svg",
                 embeds: [embed]
             })
         });
@@ -142,7 +151,7 @@ export async function sendDiscordContactNotification(contact: any) {
             ],
             timestamp: new Date().toISOString(),
             footer: {
-                text: "Green Valley Seeds • Support Notification System",
+                text: "Zeedior.pk • Support Notification System",
             }
         };
 
@@ -152,8 +161,8 @@ export async function sendDiscordContactNotification(contact: any) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                username: "Green Valley Support Bot",
-                avatar_url: "https://greenvalleyseeds.pk/icon.svg",
+                username: "Zeedior Support Bot",
+                avatar_url: "https://zeedior.pk/icon.svg",
                 embeds: [embed]
             })
         });

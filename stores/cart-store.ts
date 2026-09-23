@@ -12,6 +12,7 @@ export interface CartItem {
     weight?: number; // Weight in grams
     advanceDiscount?: number;
     advanceDiscountType?: string;
+    isCustomizable?: boolean;
     variationId?: string;
     variationTitle?: string;
 }

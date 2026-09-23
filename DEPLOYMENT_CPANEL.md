@@ -1,7 +1,7 @@
 # Deploying Next.js App to cPanel
 
 ## Overview
-This guide will help you deploy your Green Valley Seeds Next.js application to cPanel hosting.
+This guide will help you deploy your Zeedior.pk Next.js application to cPanel hosting.
 
 ## Prerequisites
 - cPanel hosting account with Node.js support
@@ -48,7 +48,7 @@ export default nextConfig;
    - **Node.js Version**: Select latest LTS (18.x or 20.x)
    - **Application Mode**: Production
    - **Application Root**: `/home/username/public_html` (or your domain root)
-   - **Application URL**: Your domain (e.g., `greenvalleyseeds.pk`)
+   - **Application URL**: Your domain (e.g., `zeedior.pk`)
    - **Application Startup File**: `app.js` ⚠️ **IMPORTANT: Use `app.js`, NOT `server.js` or `next start`**
 
 4. **Set Environment Variables:**
@@ -200,7 +200,7 @@ npm install -g pm2
 ```javascript
 module.exports = {
   apps: [{
-    name: 'greenvalleyseeds',
+    name: 'zeedior',
     script: 'node_modules/next/dist/bin/next',
     args: 'start',
     cwd: '/home/username/public_html',
@@ -237,7 +237,7 @@ Create `.env.production` or set in cPanel:
 ```
 NODE_ENV=production
 DATABASE_URL=file:./prisma/dev.db
-NEXTAUTH_URL=https://greenvalleyseeds.pk
+NEXTAUTH_URL=https://zeedior.pk
 NEXTAUTH_SECRET=your-random-secret-here
 ```
 

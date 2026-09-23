@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!product) {
         return {
-            title: "Product Not Found | Green Valley Seeds",
+            title: "Product Not Found | Zeedior.pk",
         };
     }
 
@@ -37,14 +37,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     } catch (e) { }
 
     return {
-        title: `${p.title} | Green Valley Seeds`,
+        title: `${p.title} | Zeedior.pk`,
         description: p.description.substring(0, 160),
         openGraph: {
             title: p.title,
             description: p.description,
             images: [imageUrl],
             type: "website",
-            siteName: "Green Valley Seeds",
+            siteName: "Zeedior.pk",
         },
         twitter: {
             card: "summary_large_image",
@@ -71,7 +71,10 @@ export default async function ProductPage({ params }: Props) {
 
     if (!product) notFound();
 
-    const p = product as any;
+    const p = {
+        ...product,
+        isCustomizable: (product as any).isCustomizable === 1 || (product as any).isCustomizable === true || (product as any).isCustomizable === "1"
+    } as any;
 
     // Fetch related products
     const relatedProducts = await prisma.product.findMany({
@@ -156,6 +159,7 @@ export default async function ProductPage({ params }: Props) {
                                     stock: p.stock,
                                     weight: p.weight,
                                     deliveryFee: p.deliveryFee,
+                                    isCustomizable: p.isCustomizable,
                                     variations: p.variations
                                 }}
                             />

@@ -14,77 +14,173 @@ function formatPrice(amount: number) {
     }).format(amount);
 }
 
-export const revalidate = 3600; // Cache for 1 hour
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ShopPage({
     searchParams,
 }: {
-    searchParams: { category?: string; sort?: string };
+    searchParams: { category?: string; subCategory?: string; sort?: string };
 }) {
     const category = searchParams.category ? decodeURIComponent(searchParams.category) : undefined;
+    const subCategory = searchParams.subCategory ? decodeURIComponent(searchParams.subCategory) : undefined;
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+    let allProducts: any[] = [];
+    let categoriesWithSubs: any[] = [];
 
-    const [allProducts, categoryDocs] = await Promise.all([
-        prisma.product.findMany({
-            where: category ? {
-                OR: [
-                    { category: { equals: category } },
-                    { category: { equals: category.toLowerCase() } }
+    const url = process.env.TURSO_DATABASE_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    if (url && authToken) {
+        try {
+            const { createClient } = await import("@libsql/client");
+            const client = createClient({ url, authToken });
+
+            let productSql = 'SELECT * FROM "Product"';
+            const args: any[] = [];
+
+            if (subCategory) {
+                productSql += ' WHERE subCategory = ?';
+                args.push(subCategory);
+            } else if (category) {
+                productSql += ' WHERE category = ?';
+                args.push(category);
+            }
+
+            productSql += ' ORDER BY position ASC, createdAt DESC';
+
+            const prodRes = await client.execute({ sql: productSql, args });
+            allProducts = prodRes.rows.map((row: any) => ({
+                ...row,
+                id: String(row.id),
+                title: String(row.title),
+                price: Number(row.price),
+                salePrice: row.salePrice ? Number(row.salePrice) : null,
+                images: String(row.images || "[]"),
+                category: String(row.category),
+                subCategory: row.subCategory ? String(row.subCategory) : null,
+            }));
+
+            const catRes = await client.execute('SELECT * FROM "Category" ORDER BY name ASC');
+            const subRes = await client.execute('SELECT * FROM "SubCategory" ORDER BY name ASC');
+
+            const subMap: Record<string, any[]> = {};
+            subRes.rows.forEach((sub: any) => {
+                const cId = String(sub.categoryId);
+                if (!subMap[cId]) subMap[cId] = [];
+                subMap[cId].push({ id: String(sub.id), name: String(sub.name) });
+            });
+
+            categoriesWithSubs = catRes.rows.map((c: any) => ({
+                id: String(c.id),
+                name: String(c.name),
+                subcategories: subMap[String(c.id)] || []
+            }));
+        } catch (e) {
+            console.error("Direct Turso fetch in ShopPage failed, fallback to Prisma:", e);
+        }
+    }
+
+    if (allProducts.length === 0 && categoriesWithSubs.length === 0) {
+        const [dbProds, dbCats] = await Promise.all([
+            prisma.product.findMany({
+                where: (subCategory ? {
+                    subCategory: { equals: subCategory }
+                } : category ? {
+                    OR: [
+                        { category: { equals: category } },
+                        { category: { equals: category.toLowerCase() } }
+                    ]
+                } : undefined) as any,
+                orderBy: [
+                    { position: 'asc' },
+                    { createdAt: 'desc' }
                 ]
-            } : undefined,
-            orderBy: [
-                { position: 'asc' },
-                { createdAt: 'desc' }
-            ]
-        }),
-        prisma.category.findMany({
-            orderBy: { name: 'asc' }
-        })
-    ]);
+            }),
+            (prisma.category as any).findMany({
+                include: { subcategories: true },
+                orderBy: { name: 'asc' }
+            })
+        ]);
+        allProducts = dbProds;
+        categoriesWithSubs = dbCats;
+    }
 
-    const categories = categoryDocs.map((c: any) => c.name);
+    const activeCategoryObj = categoriesWithSubs.find(c => c.name === category);
+    const activeSubcategories = activeCategoryObj?.subcategories || [];
 
     return (
         <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 pb-20">
             {/* Header */}
             <div className="bg-black border-b border-zinc-800 py-8 px-4">
                 <div className="mx-auto max-w-6xl">
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Shop</h1>
-                    <p className="text-zinc-400 mt-2">Browse our collection of seeds and tools.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white uppercase tracking-wider">
+                        {subCategory ? `${subCategory}` : category ? `${category}` : "All Products"}
+                    </h1>
+                    <p className="text-zinc-400 mt-2 text-xs sm:text-sm uppercase tracking-widest">
+                        {subCategory
+                            ? `Showing items in ${category} → ${subCategory}`
+                            : category
+                                ? `Explore items in ${category}`
+                                : "Browse our collection of products and accessories."}
+                    </p>
                 </div>
             </div>
 
-
-
-            <div className="mx-auto max-w-6xl px-4 mt-8">
-
-                {/* Categories: Horizontal pill bar on all screen sizes */}
-                <div className="mb-6 -mx-4 px-4">
-                    <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+            <div className="mx-auto max-w-6xl px-4 mt-8 space-y-4">
+                {/* Main Categories Pill Bar */}
+                <div className="-mx-4 px-4">
+                    <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 hide-scrollbar">
                         <Link
                             href="/shop"
-                            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition-colors ${!category
-                                ? "bg-primary text-white border-primary"
-                                : "bg-white text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"}`}
+                            className={`whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider sm:tracking-widest border transition-all ${!category
+                                ? "bg-primary text-white border-primary shadow-sm"
+                                : "bg-white text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 hover:border-zinc-400"}`}
                         >
                             All Products
                         </Link>
-                        {categories.map((c: string) => (
+                        {categoriesWithSubs.map((c: any) => (
                             <Link
-                                key={c}
-                                href={`/shop?category=${encodeURIComponent(c)}`}
-                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium border transition-colors ${category === c
-                                    ? "bg-primary text-white border-primary"
-                                    : "bg-white text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"}`}
+                                key={c.id}
+                                href={`/shop?category=${encodeURIComponent(c.name)}`}
+                                className={`whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider sm:tracking-widest border transition-all ${category === c.name
+                                    ? "bg-primary text-white border-primary shadow-sm"
+                                    : "bg-white text-zinc-700 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 hover:border-zinc-400"}`}
                             >
-                                {c}
+                                {c.name}
                             </Link>
                         ))}
                     </div>
                 </div>
+
+                {/* Subcategories Horizontal Bar (Visible when a Category with subcategories is selected) */}
+                {category && activeSubcategories.length > 0 && (
+                    <div className="p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl shadow-sm animate-in fade-in slide-in-from-top-1">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 block mb-1.5 sm:mb-2">
+                            Subcategories in {category}
+                        </span>
+                        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                            <Link
+                                href={`/shop?category=${encodeURIComponent(category)}`}
+                                className={`whitespace-nowrap px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-extrabold uppercase tracking-wider border transition-all ${!subCategory
+                                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 border-zinc-900 dark:border-white shadow-sm"
+                                    : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100"}`}
+                            >
+                                All {category}
+                            </Link>
+                            {activeSubcategories.map((sub: any) => (
+                                <Link
+                                    key={sub.id}
+                                    href={`/shop?category=${encodeURIComponent(category)}&subCategory=${encodeURIComponent(sub.name)}`}
+                                    className={`whitespace-nowrap px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-extrabold uppercase tracking-wider border transition-all ${subCategory === sub.name
+                                        ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 border-zinc-900 dark:border-white shadow-sm"
+                                        : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100"}`}
+                                >
+                                    {sub.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Product Grid */}
                 <Suspense fallback={<ProductGridSkeleton count={8} />}>

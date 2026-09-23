@@ -9,7 +9,7 @@ export async function GET() {
             orderBy: { createdAt: 'desc' },
         });
 
-        const baseUrl = process.env.NEXTAUTH_URL || "https://greenvalleyseeds.pk";
+        const baseUrl = process.env.NEXTAUTH_URL || "https://zeedior.pk";
         
         // Meta (Facebook) Catalog Feed in CSV format
         // Required columns: id, title, description, availability, condition, price, link, image_link, brand
@@ -30,7 +30,7 @@ export async function GET() {
                 imageLink = images.length > 0 ? images[0] : "";
             } catch (e) {}
 
-            const brand = "Green Valley Seeds";
+            const brand = "Zeedior";
 
             csv += `${id},${title},${description},${availability},${condition},${price},${link},${imageLink},${brand}\n`;
         });

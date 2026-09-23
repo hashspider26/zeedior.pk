@@ -21,6 +21,7 @@ interface AddToCartProps {
         weight?: number;
         advanceDiscount?: number;
         advanceDiscountType?: string;
+        isCustomizable?: boolean;
         variationId?: string;
         variationTitle?: string;
     };
@@ -65,6 +66,7 @@ export function AddToCart({
             weight: product.weight,
             advanceDiscount: product.advanceDiscount,
             advanceDiscountType: product.advanceDiscountType,
+            isCustomizable: product.isCustomizable,
             variationId: product.variationId,
             variationTitle: product.variationTitle
         });

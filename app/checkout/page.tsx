@@ -21,13 +21,14 @@ interface CheckoutItem {
     image?: string;
     advanceDiscount?: number;
     advanceDiscountType?: string;
+    isCustomizable?: boolean;
     variationId?: string;
     variationTitle?: string;
 }
 
 export const dynamic = "force-dynamic";
 
-import { ShieldCheck, Lock, Clock, ShoppingBag, Truck, Gift, Smartphone, Building } from "lucide-react";
+import { ShieldCheck, Lock, Clock, ShoppingBag, Truck, Gift, Smartphone, Building, Sparkles } from "lucide-react";
 
 function CheckoutContent() {
     const { data: session, status: sessionStatus } = useSession();
@@ -65,6 +66,7 @@ function CheckoutContent() {
         phone: "",
         address: "",
         city: "",
+        customizationNote: "",
     });
 
     useEffect(() => {
@@ -112,6 +114,7 @@ function CheckoutContent() {
                             image: imageUrl || undefined,
                             advanceDiscount: product.advanceDiscount || 0,
                             advanceDiscountType: product.advanceDiscountType || "PKR",
+                            isCustomizable: Boolean(product.isCustomizable),
                             variationId: activeVariation?.id,
                             variationTitle: activeVariation?.title
                         }]);
@@ -131,6 +134,7 @@ function CheckoutContent() {
                     image: item.image,
                     advanceDiscount: (item as any).advanceDiscount || 0,
                     advanceDiscountType: (item as any).advanceDiscountType || "PKR",
+                    isCustomizable: (item as any).isCustomizable || false,
                     variationId: item.variationId,
                     variationTitle: item.variationTitle
                 })));
@@ -176,6 +180,7 @@ function CheckoutContent() {
             phone: formData.phone,
             address: formData.address,
             city: formData.city,
+            customizationNote: formData.customizationNote,
             paymentMethod,
             discountAmount: totalDiscount,
             items: checkoutItems.map(item => ({
@@ -282,7 +287,7 @@ function CheckoutContent() {
             <div className="border-b border-zinc-100 italic">
                 <div className="mx-auto max-w-5xl h-20 flex items-center justify-center">
                     <Link href="/" className="text-xl font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                        Green Valley <span className="text-primary italic">Seeds</span>
+                        Zeedior<span className="text-primary italic">.pk</span>
                     </Link>
                 </div>
             </div>
@@ -336,6 +341,23 @@ function CheckoutContent() {
                                     rows={3}
                                     className="w-full bg-zinc-50 border-0 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-zinc-400 focus:ring-2 focus:ring-primary transition-all resize-none"
                                 />
+
+                                {/* Customization Note Textarea */}
+                                <div className="space-y-2 p-4 bg-amber-50/70 border border-amber-200 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                                    <label className="block text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-amber-600" /> Customization Note / Special Instructions (Optional)
+                                    </label>
+                                    <p className="text-[11px] text-amber-700 font-medium">
+                                        Want custom engraving, personalized name printing, or gift notes? Write your instructions below.
+                                    </p>
+                                    <textarea
+                                        value={formData.customizationNote}
+                                        onChange={e => setFormData({ ...formData, customizationNote: e.target.value })}
+                                        placeholder="e.g. Please engrave 'Ahmad & Sara' or custom gift note..."
+                                        rows={3}
+                                        className="w-full bg-white border border-amber-300 rounded-xl px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none"
+                                    />
+                                </div>
                             </form>
                         </section>
 

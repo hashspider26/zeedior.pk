@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sprout } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { AddToCart } from "@/components/cart/add-to-cart";
 import { getRandomizedUrl } from "@/lib/cloudinary";
 
@@ -18,6 +18,7 @@ interface ProductCardProps {
         advanceDiscountType?: string;
         stock?: number;
     };
+    showQuickBuy?: boolean;
 }
 
 function formatPrice(amount: number) {
@@ -28,7 +29,7 @@ function formatPrice(amount: number) {
     }).format(amount);
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, showQuickBuy = true }: ProductCardProps) {
     let imageUrl = null;
     try {
         const images = product.images ? JSON.parse(product.images) : [];
@@ -59,7 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-zinc-300">
-                            <Sprout className="h-8 w-8 opacity-50" />
+                            <Sparkles className="h-8 w-8 opacity-50" />
                         </div>
                     )}
                 </Link>
@@ -107,7 +108,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         )}
                     </div>
 
-                    {!isOutOfStock && (
+                    {!isOutOfStock && showQuickBuy && (
                         <div className="mt-4">
                             <AddToCart
                                 product={{

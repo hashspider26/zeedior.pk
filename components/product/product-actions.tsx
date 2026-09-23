@@ -19,6 +19,7 @@ interface ProductActionsProps {
         deliveryFee?: number;
         advanceDiscount?: number;
         advanceDiscountType?: string;
+        isCustomizable?: boolean;
         variations?: {
             id: string;
             title: string;
@@ -86,7 +87,7 @@ export function ProductActions({ product }: ProductActionsProps) {
         const url = window.location.href;
         const shareData = {
             title: product.title,
-            text: `Check out ${product.title} on Green Valley Seeds`,
+            text: `Check out ${product.title} on Zeedior.pk`,
             url: url,
         };
 
@@ -173,6 +174,7 @@ export function ProductActions({ product }: ProductActionsProps) {
         price: currentPrice,
         stock: currentStock,
         deliveryFee: activeDeal?.deliveryFee !== undefined ? activeDeal.deliveryFee : product.deliveryFee,
+        isCustomizable: product.isCustomizable,
         variationId: activeDeal?.id,
         variationTitle: activeDeal?.title
     };
@@ -350,7 +352,7 @@ export function ProductActions({ product }: ProductActionsProps) {
             {/* Psychological scarcity/trust near buttons */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-tighter text-zinc-400">
-                    <Shield className="h-3 w-3" /> 100% Genuine Seeds
+                    <Shield className="h-3 w-3" /> 100% Quality Guaranteed
                 </div>
                 <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-tighter text-zinc-400">
                     <Check className="h-3 w-3" /> Hand Picked Quality

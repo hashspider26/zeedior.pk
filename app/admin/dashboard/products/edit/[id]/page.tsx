@@ -35,15 +35,22 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     const [weight, setWeight] = useState("");
     const [deliveryFee, setDeliveryFee] = useState("");
     const [category, setCategory] = useState("");
-    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+    const [subCategory, setSubCategory] = useState("");
+    const [isCustomizable, setIsCustomizable] = useState(false);
+    const [categories, setCategories] = useState<{ id: string; name: string; subcategories?: { id: string; name: string }[] }[]>([]);
 
     useEffect(() => {
         // Fetch categories
         fetch("/api/categories")
             .then(res => res.json())
-            .then(data => setCategories(data))
+            .then(data => {
+                if (Array.isArray(data)) setCategories(data);
+            })
             .catch(console.error);
     }, []);
+
+    const activeCatObj = categories.find(c => c.name === category);
+    const availableSubCats = activeCatObj?.subcategories || [];
 
     useEffect(() => {
         async function fetchProduct() {
@@ -62,6 +69,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 setWeight((product.weight || 0).toString());
                 setDeliveryFee((product.deliveryFee || 0).toString());
                 setCategory(product.category);
+                setSubCategory(product.subCategory || "");
+                setIsCustomizable(Boolean(product.isCustomizable));
 
                 // Parse images safely
                 try {
@@ -165,6 +174,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     weight,
                     deliveryFee,
                     category,
+                    subCategory,
+                    isCustomizable,
                     images: images,
                     variations: deals.map(deal => ({
                         title: deal.title,
@@ -181,11 +192,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 router.push("/admin/dashboard/products");
                 router.refresh();
             } else {
-                alert("Failed to update product");
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.error || errData.details || "Failed to update product");
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert("Error updating product");
+            alert(e?.message || "Error updating product");
         } finally {
             setSubmitting(false);
         }
@@ -320,16 +332,55 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Category</label>
-                            <select
-                                value={category} onChange={e => setCategory(e.target.value)}
-                                className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
-                            >
-                                {categories.map((c) => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                ))}
-                            </select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Category</label>
+                                <select
+                                    value={category}
+                                    onChange={e => {
+                                        setCategory(e.target.value);
+                                        setSubCategory("");
+                                    }}
+                                    className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
+                                >
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Subcategory (Optional)</label>
+                                <select
+                                    value={subCategory}
+                                    onChange={e => setSubCategory(e.target.value)}
+                                    className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-primary focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
+                                >
+                                    <option value="">-- No Subcategory --</option>
+                                    {availableSubCats.map((sub) => (
+                                        <option key={sub.id} value={sub.name}>{sub.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Customizable Product Option */}
+                        <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isCustomizable}
+                                    onChange={(e) => setIsCustomizable(e.target.checked)}
+                                    className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500"
+                                />
+                                <div>
+                                    <span className="text-sm font-bold text-amber-950 dark:text-amber-200 block">
+                                        Customizable Product
+                                    </span>
+                                    <span className="text-xs text-amber-700 dark:text-amber-400 block">
+                                        Ask customer for a customization note (e.g. custom name, engraving, gift note) at checkout.
+                                    </span>
+                                </div>
+                            </label>
                         </div>
 
                         {/* Best Deals / Packages Section */}

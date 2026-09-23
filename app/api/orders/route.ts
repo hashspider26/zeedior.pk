@@ -75,6 +75,7 @@ export async function POST(request: Request) {
             phone,
             address,
             city,
+            customizationNote: body.customizationNote || null,
             totalAmount,
             discountAmount,
             paymentMethod: body.paymentMethod || "COD",
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
                 });
                 break;
             } catch (err: any) {
+                console.error(`Order creation attempt ${attempt + 1} failed via Prisma:`, err);
                 const isUniqueViolation = err?.code === "P2002" || (err?.message && String(err.message).includes("UNIQUE constraint failed"));
                 if (isUniqueViolation && attempt < maxAttempts - 1) {
                     // Collision! Refresh lastOrder and try again
@@ -120,6 +122,64 @@ export async function POST(request: Request) {
                     });
                     continue;
                 }
+
+                // If error is due to missing customizationNote column or Prisma out of sync, perform direct Turso SQL fallback
+                const url = process.env.TURSO_DATABASE_URL;
+                const authToken = process.env.TURSO_AUTH_TOKEN;
+                if (url && authToken) {
+                    try {
+                        const { createClient } = await import("@libsql/client");
+                        const client = createClient({ url, authToken });
+
+                        // Ensure column exists
+                        try {
+                            await client.execute('ALTER TABLE "Order" ADD COLUMN "customizationNote" TEXT');
+                        } catch (e) {}
+
+                        const id = "ord_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+                        await client.execute({
+                            sql: `INSERT INTO "Order" (id, readableId, customerName, phone, address, city, customizationNote, totalAmount, discountAmount, paymentMethod, status, stockDeducted, userId, createdAt, updatedAt)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                            args: [
+                                id,
+                                readableId,
+                                orderData.customerName,
+                                orderData.phone,
+                                orderData.address,
+                                orderData.city,
+                                orderData.customizationNote,
+                                orderData.totalAmount,
+                                orderData.discountAmount,
+                                orderData.paymentMethod,
+                                "PENDING",
+                                0,
+                                orderData.userId
+                            ]
+                        });
+
+                        for (const item of orderItems) {
+                            const itemId = "item_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+                            await client.execute({
+                                sql: `INSERT INTO "OrderItem" (id, orderId, productId, quantity, price, dealTitle)
+                                      VALUES (?, ?, ?, ?, ?, ?)`,
+                                args: [
+                                    itemId,
+                                    id,
+                                    item.productId,
+                                    item.quantity,
+                                    item.price,
+                                    item.dealTitle
+                                ]
+                            });
+                        }
+
+                        order = { id, readableId, ...orderData };
+                        break;
+                    } catch (tursoErr) {
+                        console.error("Turso direct SQL fallback order creation failed:", tursoErr);
+                    }
+                }
+
                 throw err;
             }
         }
@@ -146,20 +206,31 @@ export async function POST(request: Request) {
         }
 
         // Send Discord notification (fire and forget)
-        const fullOrder = await prisma.order.findUnique({
-            where: { id: order.id },
-            include: { items: { include: { product: true } } }
-        });
+        let targetNotificationOrder = order;
+        try {
+            const fullOrder = await prisma.order.findUnique({
+                where: { id: order.id },
+                include: { items: { include: { product: true } } }
+            });
+            if (fullOrder) targetNotificationOrder = fullOrder;
+        } catch (e) {
+            console.warn("Prisma fetch for fullOrder failed, using order object:", e);
+        }
 
-        if (fullOrder) {
+        if (targetNotificationOrder) {
+            targetNotificationOrder = {
+                ...targetNotificationOrder,
+                customizationNote: body.customizationNote || targetNotificationOrder.customizationNote || orderData.customizationNote || null
+            };
+
             // 1. Send Discord notification
-            sendDiscordOrderNotification(fullOrder).catch(err =>
+            sendDiscordOrderNotification(targetNotificationOrder).catch(err =>
                 console.error("Delayed Discord notification failed:", err)
             );
 
             // 2. Track purchase via Meta Conversions API (CAPI) for deduplication
             const { trackPurchaseServer } = await import("@/lib/meta-capi");
-            trackPurchaseServer(fullOrder).catch(err =>
+            trackPurchaseServer(targetNotificationOrder).catch(err =>
                 console.error("Meta CAPI tracking failed:", err)
             );
         }
@@ -168,8 +239,8 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error("Order creation error:", error);
         return NextResponse.json({
-            error: "Failed to create order",
-            details: error.message
+            error: error?.message || "Failed to create order",
+            details: error?.stack || String(error)
         }, { status: 500 });
     }
 }
